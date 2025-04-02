@@ -11,20 +11,22 @@
 			let ninePatch;
 
 			function preload() {
-                ninePatch = new NinePatch(img, 0, 5);
+                ninePatch = new NinePatch(img, true, 5);
 			}
 
 			function setup() {
 				createCanvas(400, 400);
                 noSmooth();
+                angleMode(DEGREES);
 			}
 
 			function draw() {
 				background(220);
-                fill(128);
-                rect(0, 0, 200, 200);
                 noStroke();
-				image(ninePatch.gen(30, 30), 0, 0, 200, 200);
+                let w = map(sin(frameCount), -1, 1, 0, 200);
+                let h = map(cos(frameCount), -1, 1, 0, 200);
+                let img = ninePatch.gen(w, h);
+				image(img, 0, 0, img.width * 2, img.height * 2);
 			}
 		</script>
 	</head>
