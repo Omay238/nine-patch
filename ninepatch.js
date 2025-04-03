@@ -134,10 +134,17 @@ class NinePatch {
             console.error(`Failed to load image ${src}: ${err}\nMake sure the file exists and is not corrupted.`);
         });
     }
-    gen(wo, ho) {
+    gen(wo, ho, border_scale = 1) {
+        // todo: tiling support
+
+        let scaleTopPatch = this.topPatch * border_scale;
+        let scaleRightPatch = this.rightPatch * border_scale;
+        let scaleBottomPatch = this.bottomPatch * border_scale;
+        let scaleLeftPatch = this.leftPatch * border_scale;
+
         // make sure at least the corners fit
-        let w = max(this.rightPatch + this.leftPatch, wo);
-        let h = max(this.topPatch + this.bottomPatch, ho);
+        let w = max(scaleLeftPatch + scaleRightPatch, wo);
+        let h = max(scaleTopPatch + scaleBottomPatch, ho);
 
         // make the graphics object
         let temp = createGraphics(w, h);
@@ -147,10 +154,10 @@ class NinePatch {
         if (this.stretch) {
             temp.image(
                 this.patches[8],
-                this.leftPatch,
-                this.topPatch,
-                w - this.rightPatch - this.leftPatch,
-                h - this.topPatch - this.bottomPatch
+                scaleLeftPatch,
+                scaleTopPatch,
+                w - scaleLeftPatch - scaleRightPatch,
+                h - scaleTopPatch - scaleBottomPatch
             ); // middle
         } else {
             console.error("Tiling is not supported yet.");
@@ -162,35 +169,35 @@ class NinePatch {
             if (wo === w) {
                 temp.image(
                     this.patches[1],
-                    this.leftPatch,
+                    scaleLeftPatch,
                     0,
-                    w - this.leftPatch - this.rightPatch,
-                    this.topPatch
+                    w - scaleLeftPatch - scaleRightPatch,
+                    scaleTopPatch
                 ); // top middle
 
                 temp.image(
                     this.patches[5],
-                    this.leftPatch,
-                    h - this.bottomPatch,
-                    w - this.leftPatch - this.rightPatch,
-                    this.bottomPatch
+                    scaleLeftPatch,
+                    h - scaleBottomPatch,
+                    w - scaleLeftPatch - scaleRightPatch,
+                    scaleBottomPatch
                 ); // bottom middle
             }
             if (ho === h) {
                 temp.image(
                     this.patches[3],
-                    w - this.rightPatch,
-                    this.bottomPatch - 1,
-                    this.topPatch,
-                    h - this.topPatch - this.bottomPatch + 1
+                    w - scaleRightPatch,
+                    scaleBottomPatch - 1,
+                    scaleTopPatch,
+                    h - scaleTopPatch - scaleBottomPatch + 1
                 ); // right middle -- i don't know why i need this little hack, but it works...
 
                 temp.image(
                     this.patches[7],
                     0,
-                    this.topPatch,
-                    this.leftPatch,
-                    h - this.topPatch - this.bottomPatch
+                    scaleTopPatch,
+                    scaleLeftPatch,
+                    h - scaleTopPatch - scaleBottomPatch
                 ); // left middle
             }
         } else {
@@ -201,25 +208,33 @@ class NinePatch {
         temp.image(
             this.patches[0],
             0,
-            0
+            0,
+            scaleLeftPatch,
+            scaleTopPatch
         ); // top left
 
         temp.image(
             this.patches[2],
-            w - this.rightPatch,
-            0
+            w - scaleRightPatch,
+            0,
+            scaleRightPatch,
+            scaleTopPatch
         ); // top right
 
         temp.image(
             this.patches[4],
-            w - this.rightPatch,
-            h - this.bottomPatch
+            w - scaleRightPatch,
+            h - scaleBottomPatch,
+            scaleRightPatch,
+            scaleBottomPatch
         ); // bottom right
 
         temp.image(
             this.patches[6],
             0,
-            h - this.bottomPatch
+            h - scaleBottomPatch,
+            scaleLeftPatch,
+            scaleBottomPatch
         ); // bottom left
 
         return temp.get();
