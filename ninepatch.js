@@ -9,13 +9,15 @@
  * @param {number} patch4 - If patches 3-4 are specified, patches will be specifying each side, clockwise starting at the top.
  */
 
+// later, it'd be nice to have multiple constructors or something for the different amount of patches
+
 class NinePatch {
     constructor(src, stretch, patch1, patch2, patch3, patch4) {
         this.stretch = stretch;
 
         this.patches = new Array(9).fill(0);
 
-        //this is almost definitely not the best way, but it's the most obvious
+        // this is almost definitely not the best way, but it's the most obvious
 
         this.topPatch = patch1;
         this.rightPatch = patch2;
@@ -35,8 +37,10 @@ class NinePatch {
             console.error("Patch 3 and 4 must be specified together or not at all.");
         }
 
-        // todo: apparently img.pixels is faster than just get, so use that primarily later
-        // however, this only runs on load, so it doesn't matter too much. also, it probably isn't that big of a difference
+        // todo: apparently img.pixels is faster than img.get, so use that primarily later
+        // however, this only runs on load, so it doesn't matter too much.
+        // also, it probably isn't that big of a difference.
+
         loadImage(src, (img) => {
             if (src.endsWith(".9.png")) {
                 let vertLayer = img.get(0, 0, img.width, 1);
@@ -64,15 +68,68 @@ class NinePatch {
                 img = img.get(1, 1, img.width - 1, img.height - 1); // remove the borders
             }
 
-            this.patches[0] = img.get(0, 0, this.leftPatch, this.topPatch); // top left
-            this.patches[1] = img.get(this.leftPatch, 0, img.width - this.rightPatch - this.leftPatch, this.topPatch); // top middle
-            this.patches[2] = img.get(img.width - this.rightPatch, 0, this.rightPatch, this.topPatch); // top right
-            this.patches[3] = img.get(img.width - this.rightPatch, this.topPatch, this.rightPatch, img.height - this.topPatch - this.bottomPatch); // middle right
-            this.patches[4] = img.get(img.width - this.rightPatch, img.height - this.bottomPatch, this.rightPatch, this.bottomPatch); // bottom right
-            this.patches[5] = img.get(this.leftPatch, img.height - this.bottomPatch, img.width - this.rightPatch - this.leftPatch, this.bottomPatch); // bottom middle
-            this.patches[6] = img.get(0, img.height - this.bottomPatch, this.leftPatch, this.bottomPatch); // bottom left
-            this.patches[7] = img.get(0, this.topPatch, this.leftPatch, img.height - this.topPatch - this.bottomPatch); // middle left
-            this.patches[8] = img.get(this.leftPatch, this.topPatch, img.width - this.rightPatch - this.leftPatch, img.height - this.topPatch - this.bottomPatch); // middle
+            this.patches[0] = img.get(
+                0,
+                0,
+                this.leftPatch,
+                this.topPatch
+            ); // top left
+
+            this.patches[1] = img.get(
+                this.leftPatch,
+                0,
+                img.width - this.rightPatch - this.leftPatch,
+                this.topPatch
+            ); // top middle
+
+            this.patches[2] = img.get(
+                img.width - this.rightPatch,
+                0,
+                this.rightPatch,
+                this.topPatch
+            ); // top right
+
+            this.patches[3] = img.get(
+                img.width - this.rightPatch,
+                this.topPatch,
+                this.rightPatch,
+                img.height - this.topPatch - this.bottomPatch
+            ); // middle right
+
+            this.patches[4] = img.get(
+                img.width - this.rightPatch,
+                img.height - this.bottomPatch,
+                this.rightPatch,
+                this.bottomPatch
+            ); // bottom right
+
+            this.patches[5] = img.get(
+                this.leftPatch,
+                img.height - this.bottomPatch,
+                img.width - this.rightPatch - this.leftPatch,
+                this.bottomPatch
+            ); // bottom middle
+
+            this.patches[6] = img.get(
+                0,
+                img.height - this.bottomPatch,
+                this.leftPatch,
+                this.bottomPatch
+            ); // bottom left
+
+            this.patches[7] = img.get(
+                0,
+                this.topPatch,
+                this.leftPatch,
+                img.height - this.topPatch - this.bottomPatch
+            ); // middle left
+
+            this.patches[8] = img.get(
+                this.leftPatch,
+                this.topPatch,
+                img.width - this.rightPatch - this.leftPatch,
+                img.height - this.topPatch - this.bottomPatch
+            ); // middle
         }, (err) => {
             console.error(`Failed to load image ${src}: ${err}\nMake sure the file exists and is not corrupted.`);
         });
@@ -88,7 +145,13 @@ class NinePatch {
 
         // draw the middle
         if (this.stretch) {
-            temp.image(this.patches[8], this.leftPatch, this.topPatch, w - this.rightPatch - this.leftPatch, h - this.topPatch - this.bottomPatch); // middle
+            temp.image(
+                this.patches[8],
+                this.leftPatch,
+                this.topPatch,
+                w - this.rightPatch - this.leftPatch,
+                h - this.topPatch - this.bottomPatch
+            ); // middle
         } else {
             console.error("Tiling is not supported yet.");
         }
@@ -97,22 +160,67 @@ class NinePatch {
         if (this.stretch) {
             // need to only draw sides if they exist
             if (wo === w) {
-                temp.image(this.patches[1], this.leftPatch, 0, w - this.leftPatch - this.rightPatch, this.topPatch); // top middle
-                temp.image(this.patches[5], this.leftPatch, h - this.bottomPatch, w - this.leftPatch - this.rightPatch, this.bottomPatch); // bottom middle
+                temp.image(
+                    this.patches[1],
+                    this.leftPatch,
+                    0,
+                    w - this.leftPatch - this.rightPatch,
+                    this.topPatch
+                ); // top middle
+
+                temp.image(
+                    this.patches[5],
+                    this.leftPatch,
+                    h - this.bottomPatch,
+                    w - this.leftPatch - this.rightPatch,
+                    this.bottomPatch
+                ); // bottom middle
             }
             if (ho === h) {
-                temp.image(this.patches[3], w - this.rightPatch, this.bottomPatch - 1, this.topPatch, h - this.topPatch - this.bottomPatch + 1); // right middle -- i don't know why i need this little hack, but it works...
-                temp.image(this.patches[7], 0, this.topPatch, this.leftPatch, h - this.topPatch - this.bottomPatch); // left middle
+                temp.image(
+                    this.patches[3],
+                    w - this.rightPatch,
+                    this.bottomPatch - 1,
+                    this.topPatch,
+                    h - this.topPatch - this.bottomPatch + 1
+                ); // right middle -- i don't know why i need this little hack, but it works...
+
+                temp.image(
+                    this.patches[7],
+                    0,
+                    this.topPatch,
+                    this.leftPatch,
+                    h - this.topPatch - this.bottomPatch
+                ); // left middle
             }
         } else {
             console.error("Tiling is not supported yet.");
         }
 
         // draw the corners first (they're easy)
-        temp.image(this.patches[0], 0, 0); // top left
-        temp.image(this.patches[2], w - this.rightPatch, 0); // top right
-        temp.image(this.patches[4], w - this.rightPatch, h - this.bottomPatch); // bottom right
-        temp.image(this.patches[6], 0, h - this.bottomPatch); // bottom left
+        temp.image(
+            this.patches[0],
+            0,
+            0
+        ); // top left
+
+        temp.image(
+            this.patches[2],
+            w - this.rightPatch,
+            0
+        ); // top right
+
+        temp.image(
+            this.patches[4],
+            w - this.rightPatch,
+            h - this.bottomPatch
+        ); // bottom right
+
+        temp.image(
+            this.patches[6],
+            0,
+            h - this.bottomPatch
+        ); // bottom left
 
         return temp.get();
     }
