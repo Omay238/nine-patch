@@ -2,8 +2,8 @@
  * Creates a NinePatch image.
  * @constructor
  * @param {string} src - The source image path. If ending with .9.png, the patches do not need to be specified.
- * @param {number} stretch - Whether to stretch the image. If false, it will tile.
- * @param {number} patch1 - If only patch 1 is specified, all sides will have an equal patch size.
+ * @param {string} fillMode - The way that the image is filled. It can be "stretch" or "tile". Stretch will stretch the borders and center, while tile will tile the texture, truncating at the sides.
+ * @param {number} patch1 - If only patch 1 is specified, all sides will have an equal patch size. Defaults to 0.
  * @param {number} patch2 - If patch 2 is also specified, patch 1 will be the x patch size and patch 2 will be the y patch size.
  * @param {number} patch3 - If patches 3-4 are specified, patches will be specifying each side, clockwise starting at the top.
  * @param {number} patch4 - If patches 3-4 are specified, patches will be specifying each side, clockwise starting at the top.
@@ -12,29 +12,30 @@
 // later, it'd be nice to have multiple constructors or something for the different amount of patches
 
 class NinePatch {
-    constructor(src, stretch, patch1, patch2, patch3, patch4) {
-        this.stretch = stretch;
+    constructor(src, fillMode, patch1, patch2, patch3, patch4) {
+        this.fillMode = fillMode;
 
         this.patches = new Array(9).fill(0);
 
         // this is almost definitely not the best way, but it's the most obvious
+        // can't do default values because the others should be based on the previous ones.
 
         this.topPatch = patch1;
         this.rightPatch = patch2;
         this.bottomPatch = patch3;
         this.leftPatch = patch4;
 
-        if (patch1 === undefined) {
+        if (this.topPatch === undefined) {
             this.topPatch = 0;
         }
-        if (patch2 === undefined) {
+        if (this.rightPatch === undefined) {
             this.rightPatch = this.topPatch;
         }
-        if (patch3 === undefined && patch4 === undefined) {
+        if (this.bottomPatch === undefined && this.leftPatch === undefined) {
             this.bottomPatch = this.topPatch;
             this.leftPatch = this.rightPatch;
-        } else if ((patch3 === undefined || patch4 === undefined) && patch3 !== patch4) {
-            console.error("Patch 3 and 4 must be specified together or not at all.");
+        } else if (this.bottomPatch === undefined || this.leftPatch === undefined) {
+            console.warn("Patch 3 and 4 should be specified together or not at all.\nIf they aren't both specified, they are ignored.");
         }
 
         // todo: apparently img.pixels is faster than img.get, so use that primarily later
@@ -134,24 +135,34 @@ class NinePatch {
             console.error(`Failed to load image ${src}: ${err}\nMake sure the file exists and is not corrupted.`);
         });
     }
-    gen(wo, ho, border_scale = 1) {
-        // todo: tiling support
+    gen(wo, ho, segmentScale = 1) {
+        let scaleTopPatch = this.topPatch * segmentScale;
+        let scaleRightPatch = this.rightPatch * segmentScale;
+        let scaleBottomPatch = this.bottomPatch * segmentScale;
+        let scaleLeftPatch = this.leftPatch * segmentScale;
 
-        let scaleTopPatch = this.topPatch * border_scale;
-        let scaleRightPatch = this.rightPatch * border_scale;
-        let scaleBottomPatch = this.bottomPatch * border_scale;
-        let scaleLeftPatch = this.leftPatch * border_scale;
+        let scaleMiddleWidth = this.patches[8].width * segmentScale;
+        let scaleMiddleHeight = this.patches[8].height * segmentScale;
+
+        // make the size a multiple of the segment scale
+        wo = Math.round(wo / segmentScale) * segmentScale;
+        ho = Math.round(ho / segmentScale) * segmentScale;
 
         // make sure at least the corners fit
         let w = max(scaleLeftPatch + scaleRightPatch, wo);
         let h = max(scaleTopPatch + scaleBottomPatch, ho);
+
+        // make overflows for tiling
+        let overflowX = (w - this.leftPatch - this.rightPatch) % this.patches[8].width;
+        let overflowY = (h - this.topPatch - this.bottomPatch) % this.patches[8].height;
+        console.log(overflowX, overflowY);
 
         // make the graphics object
         let temp = createGraphics(w, h);
         temp.noSmooth();
 
         // draw the middle
-        if (this.stretch) {
+        if (this.fillMode === "stretch") {
             temp.image(
                 this.patches[8],
                 scaleLeftPatch,
@@ -159,12 +170,54 @@ class NinePatch {
                 w - scaleLeftPatch - scaleRightPatch,
                 h - scaleTopPatch - scaleBottomPatch
             ); // middle
-        } else {
-            console.error("Tiling is not supported yet.");
+        } else if (this.fillMode === "tile") {
+            let imgSrc = this.patches[8];
+
+            let imgR, imgB, imgC;
+            if (overflowX > 0) {
+                imgR = imgSrc.get(
+                    0,
+                    0,
+                    overflowX,
+                    imgSrc.height
+                );
+            }
+            if (overflowY > 0) {
+                imgB = imgSrc.get(
+                    0,
+                    0,
+                    imgSrc.width,
+                    overflowY
+                );
+            }
+            if (overflowX > 0 && overflowY > 0) {
+                imgC = imgSrc.get(
+                    0,
+                    0,
+                    overflowX,
+                    overflowY
+                );
+            }
+
+            for (let x = scaleLeftPatch; x < w - scaleRightPatch; x += scaleMiddleWidth) {
+                for (let y = scaleTopPatch; y < h - scaleBottomPatch; y += scaleMiddleHeight) {
+                    let img = imgSrc;
+
+                    if (x >= w - scaleRightPatch - scaleMiddleWidth && y >= h - scaleBottomPatch - scaleMiddleHeight && overflowX > 0 && overflowY > 0) {
+                        img = imgC;
+                    } else if (x >= w - scaleRightPatch - scaleMiddleWidth && overflowX > 0) {
+                        img = imgR;
+                    } else if (y > h - scaleBottomPatch - scaleMiddleHeight && overflowY > 0) {
+                        img = imgB;
+                    }
+
+                    temp.image(img, x, y, img.width * segmentScale, img.height * segmentScale);
+                }
+            }
         }
 
         // draw the sides
-        if (this.stretch) {
+        if (this.fillMode === "stretch") {
             // need to only draw sides if they exist
             if (wo === w) {
                 temp.image(
@@ -190,7 +243,7 @@ class NinePatch {
                     scaleBottomPatch - 1,
                     scaleTopPatch,
                     h - scaleTopPatch - scaleBottomPatch + 1
-                ); // right middle -- i don't know why i need this little hack, but it works...
+                ); // right middle -- i don't know why i need to offset by one, but this works.
 
                 temp.image(
                     this.patches[7],
@@ -200,8 +253,8 @@ class NinePatch {
                     h - scaleTopPatch - scaleBottomPatch
                 ); // left middle
             }
-        } else {
-            console.error("Tiling is not supported yet.");
+        } else if (this.fillMode === "tile") {
+
         }
 
         // draw the corners first (they're easy)
@@ -237,6 +290,10 @@ class NinePatch {
             scaleBottomPatch
         ); // bottom left
 
-        return temp.get();
+        let out = temp.get();
+
+        temp.remove();
+
+        return out;
     }
 }

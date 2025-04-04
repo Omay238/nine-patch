@@ -11,7 +11,7 @@
 			let ninePatch;
 
 			function preload() {
-                ninePatch = new NinePatch(img, true, 5);
+                ninePatch = new NinePatch(img, "stretch", 5);
 			}
 
 			function setup() {
@@ -23,13 +23,27 @@
                 return min + abs((n % (2 * (max - min))) - (max - min));
             }
 
+            let minFramerate = Infinity;
+
 			function draw() {
 				background(220);
                 noStroke();
-                let w = loopBetweenValues(frameCount + 186, 28, 400);
-                let h = loopBetweenValues(frameCount, 28, 400);
-                let img = ninePatch.gen(w, h, 3);
+                let w = loopBetweenValues(frameCount + 350, 16, 400);
+                let h = loopBetweenValues(frameCount, 16, 400);
+                let img = ninePatch.gen(w, h, 4);
 				image(img, 0, 0);
+
+                if (frameRate() < minFramerate) {
+					minFramerate = frameRate();
+				}
+
+                text(minFramerate, 10, 20);
+                noLoop();
+			}
+
+            mouseClicked = function() {
+				minFramerate = Infinity;
+				loop();
 			}
 		</script>
 	</head>
