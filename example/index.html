@@ -11,7 +11,7 @@
 			let ninePatch;
 
 			function preload() {
-                ninePatch = new NinePatch(img, "stretch", 5);
+                ninePatch = new NinePatch(img, "tile", 5);
 			}
 
 			function setup() {
@@ -38,12 +38,6 @@
 				}
 
                 text(minFramerate, 10, 20);
-                noLoop();
-			}
-
-            mouseClicked = function() {
-				minFramerate = Infinity;
-				loop();
 			}
 		</script>
 	</head>

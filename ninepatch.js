@@ -12,7 +12,7 @@
 // later, it'd be nice to have multiple constructors or something for the different amount of patches
 
 class NinePatch {
-    constructor(src, fillMode, patch1, patch2, patch3, patch4) {
+    constructor(src, fillMode="stretch", patch1, patch2, patch3, patch4) {
         this.fillMode = fillMode;
 
         this.patches = new Array(9).fill(0);
@@ -145,6 +145,7 @@ class NinePatch {
         let scaleMiddleHeight = this.patches[8].height * segmentScale;
 
         // make the size a multiple of the segment scale
+        // this isn't ideal, but it's much easier to do this than actually fix it
         wo = Math.round(wo / segmentScale) * segmentScale;
         ho = Math.round(ho / segmentScale) * segmentScale;
 
@@ -153,9 +154,8 @@ class NinePatch {
         let h = max(scaleTopPatch + scaleBottomPatch, ho);
 
         // make overflows for tiling
-        let overflowX = (w - this.leftPatch - this.rightPatch) % this.patches[8].width;
-        let overflowY = (h - this.topPatch - this.bottomPatch) % this.patches[8].height;
-        console.log(overflowX, overflowY);
+        let overflowX = ((w / segmentScale) - this.leftPatch - this.rightPatch) % this.patches[8].width;
+        let overflowY = ((h / segmentScale) - this.topPatch - this.bottomPatch) % this.patches[8].height;
 
         // make the graphics object
         let temp = createGraphics(w, h);
@@ -254,7 +254,83 @@ class NinePatch {
                 ); // left middle
             }
         } else if (this.fillMode === "tile") {
-
+            let overflowPatch1, overflowPatch3, overflowPatch5, overflowPatch7;
+            if (overflowX > 0) {
+                overflowPatch1 = this.patches[1].get(0, 0, overflowX, this.topPatch)
+                overflowPatch5 = this.patches[5].get(0, 0, overflowX, this.bottomPatch)
+            }
+            if (overflowY > 0) {
+                overflowPatch3 = this.patches[3].get(0, 0, this.rightPatch, overflowY)
+                overflowPatch7 = this.patches[7].get(0, 0, this.leftPatch, overflowY)
+            }
+            for (let x = scaleLeftPatch; x < w - scaleRightPatch; x += scaleMiddleWidth) {
+                // top and bottom
+                if (overflowX > 0 && x >= w - scaleRightPatch - scaleMiddleWidth) {
+                    temp.image(
+                        overflowPatch1,
+                        x,
+                        0,
+                        overflowPatch1.width * segmentScale,
+                        scaleTopPatch
+                    )
+                    temp.image(
+                        overflowPatch5,
+                        x,
+                        h - scaleBottomPatch,
+                        overflowPatch5.width * segmentScale,
+                        scaleBottomPatch
+                    )
+                } else {
+                    temp.image(
+                        this.patches[1],
+                        x,
+                        0,
+                        scaleMiddleWidth,
+                        scaleTopPatch
+                    )
+                    temp.image(
+                        this.patches[5],
+                        x,
+                        h - scaleBottomPatch,
+                        scaleMiddleWidth,
+                        scaleBottomPatch
+                    )
+                }
+            }
+            for (let y = scaleTopPatch; y < h - scaleBottomPatch; y += scaleMiddleHeight) {
+                // right and left
+                if (overflowY > 0 && y >= h - scaleBottomPatch - scaleMiddleHeight) {
+                    temp.image(
+                        overflowPatch7,
+                        0,
+                        y,
+                        scaleLeftPatch,
+                        overflowPatch7.height * segmentScale
+                    )
+                    temp.image(
+                        overflowPatch3,
+                        w - scaleRightPatch,
+                        y,
+                        scaleRightPatch,
+                        overflowPatch3.height * segmentScale
+                    )
+                } else {
+                    temp.image(
+                        this.patches[7],
+                        0,
+                        y,
+                        scaleLeftPatch,
+                        scaleMiddleHeight
+                    )
+                    temp.image(
+                        this.patches[3],
+                        w - scaleRightPatch,
+                        y,
+                        scaleRightPatch,
+                        scaleMiddleHeight
+                    )
+                }
+            }
         }
 
         // draw the corners first (they're easy)
